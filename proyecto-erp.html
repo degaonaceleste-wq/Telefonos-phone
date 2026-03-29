@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone X | ERP System Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --accent: #22d3ee;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #0f172a; color: var(--light); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+
+        /* --- LOGIN SYSTEM --- */
+        #login-overlay {
+            position: fixed; inset: 0; background: radial-gradient(circle at center, #1e1b4b, #0f172a);
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.05); padding: 3rem; border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); width: 90%; max-width: 400px; text-align: center;
+        }
+
+        /* --- DASHBOARD LAYOUT --- */
+        #main-system { display: none; flex: 1; }
+        nav {
+            height: 70px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
+            padding: 0 5%; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; z-index: 100;
+        }
+        .layout { display: flex; min-height: calc(100vh - 70px); }
+        .sidebar {
+            width: 250px; background: rgba(0,0,0,0.3); padding: 2rem 1.5rem;
+            border-right: 1px solid rgba(255,255,255,0.1); position: sticky; top: 70px; height: calc(100vh - 70px);
+        }
+        .content { flex: 1; padding: 2.5rem; }
+
+        /* --- BUTTONS & INPUTS --- */
+        .nav-btn {
+            width: 100%; padding: 14px; margin-bottom: 10px; background: none; border: none;
+            color: #94a3b8; text-align: left; cursor: pointer; border-radius: 12px;
+            display: flex; align-items: center; gap: 12px; transition: 0.3s;
+        }
+        .nav-btn.active { background: var(--primary); color: white; }
+        .nav-btn:hover:not(.active) { background: rgba(255,255,255,0.05); }
+
+        .btn-add { background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-add:hover { opacity: 0.9; }
+
+        input, select { 
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); 
+            padding: 12px; border-radius: 10px; color: white; width: 100%; margin-bottom: 10px;
+        }
+
+        /* --- VISIBILITY CONTROL --- */
+        .admin-only { display: none; } /* Solo se muestra si el rol es admin */
+
+        /* --- TABLES & CARDS --- */
+        .card { background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: var(--accent); padding: 12px; border-bottom: 2px solid rgba(255,255,255,0.1); font-size: 0.8rem; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .phone-card img { width: 100%; height: 160px; object-fit: cover; border-radius: 12px; }
+
+        .role-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; margin-left: 10px; }
+        .bg-admin { background: var(--danger); }
+        .bg-staff { background: var(--warning); color: black; }
+    </style>
+</head>
+<body>
+
+<div id="login-overlay">
+    <div class="login-card">
+        <h2 style="color: var(--accent); margin-bottom: 10px;">Acceso Phone X</h2>
+        <p style="font-size: 0.8rem; margin-bottom: 20px; opacity: 0.5;">Admin: admin/1234 | Personal: staff/1234</p>
+        <form onsubmit="validar(event)">
+            <input type="text" id="user" placeholder="Usuario" required autofocus>
+            <input type="password" id="pass" placeholder="Contraseña" required>
+            <button type="submit" class="btn-add" style="width:100%; background: var(--primary); margin-top: 10px;">ENTRAR AL SISTEMA</button>
+        </form>
+    </div>
+</div>
+
+<div id="main-system">
+    <nav>
+        <div style="display:flex; align-items:center;">
+            <h2 style="color: var(--accent); letter-spacing: 2px;">PHONE X</h2>
+            <span id="role-tag" class="role-badge"></span>
+        </div>
+        <button onclick="location.reload()" style="background:var(--danger); border:none; color:white; padding:8px 15px; border-radius:8px; cursor:pointer;">Cerrar Sesión</button>
+    </nav>
+
+    <div class="layout">
+        <div class="sidebar">
+            <button class="nav-btn active" onclick="tab('inv')"><i class="fas fa-mobile-alt"></i> Inventario</button>
+            <button class="nav-btn" onclick="tab('clie')"><i class="fas fa-users"></i> Clientes</button>
+            <button class="nav-btn" onclick="tab('pers')"><i class="fas fa-user-shield"></i> Personal</button>
+        </div>
+
+        <div class="content">
+            
+            <div id="inv" class="tab-sec">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2>Inventario de Equipos</h2>
+                    <button class="btn-add admin-only" onclick="alert('Función para agregar stock próximamente')">+ Agregar Equipo</button>
+                </div>
+                <div class="grid" id="box-phones"></div>
+            </div>
+
+            <div id="clie" class="tab-sec" style="display:none">
+                <h2>Gestión de Clientes</h2>
+                <div class="card admin-only">
+                    <h4 style="margin-bottom:15px; color:var(--success)">Registrar Nuevo Cliente</h4>
+                    <form onsubmit="agregarCliente(event)" style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:10px;">
+                        <input type="text" id="c-nom" placeholder="Nombre completo" required>
+                        <input type="email" id="c-mail" placeholder="Correo electrónico" required>
+                        <input type="text" id="c-tel" placeholder="Teléfono" required>
+                        <button type="submit" class="btn-add">Guardar</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>Nombre</th><th>Correo</th><th>Teléfono</th></tr></thead>
+                        <tbody id="lista-clientes">
+                            <tr><td>Carlos Slim</td><td>contacto@slim.com</td><td>555-1234</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="pers" class="tab-sec" style="display:none">
+                <h2>Nómina de Personal</h2>
+                <div class="card admin-only">
+                    <h4 style="margin-bottom:15px; color:var(--success)">Registrar Nuevo Empleado</h4>
+                    <form onsubmit="agregarPersonal(event)" style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:10px;">
+                        <input type="text" id="p-nom" placeholder="Nombre" required>
+                        <input type="text" id="p-car" placeholder="Cargo" required>
+                        <input type="number" id="p-sue" placeholder="Sueldo $" required>
+                        <button type="submit" class="btn-add">Registrar</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>Empleado</th><th>Cargo</th><th>Sueldo</th><th>Acción</th></tr></thead>
+                        <tbody id="lista-personal">
+                            <tr><td>Admin User</td><td>Gerente</td><td>$3,000</td><td>-</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    let userRole = "";
+
+    const phones = [
+        { n: "iPhone 15 Pro", p: 1199, img: "https://images.unsplash.com/photo-1696446701796-da61225697cc?w=400" },
+        { n: "Samsung S24 Ultra", p: 1299, img: "https://images.unsplash.com/photo-1707153835058-2022d109f583?w=400" },
+        { n: "Pixel 8 Pro", p: 899, img: "https://images.unsplash.com/photo-1697525381023-4171638290bc?w=400" },
+        { n: "Xiaomi 14 Ultra", p: 1050, img: "https://images.unsplash.com/photo-1621330396173-e41b1cafd17f?w=400" }
+    ];
+
+    function validar(e) {
+        e.preventDefault();
+        const u = document.getElementById('user').value;
+        const p = document.getElementById('pass').value;
+
+        if (p === "1234") {
+            if (u === "admin") {
+                userRole = "ADMIN";
+                configurarVista(true);
+            } else if (u === "staff") {
+                userRole = "STAFF";
+                configurarVista(false);
+            } else {
+                alert("Usuario no válido");
+                return;
+            }
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('main-system').style.display = 'block';
+            renderPhones();
+        } else {
+            alert("Contraseña incorrecta");
+        }
+    }
+
+    function configurarVista(esAdmin) {
+        // Mostrar u ocultar elementos de administrador
+        const elementosAdmin = document.querySelectorAll('.admin-only');
+        elementosAdmin.forEach(el => el.style.display = esAdmin ? 'block' : 'none');
+        
+        // Etiqueta de rol
+        const tag = document.getElementById('role-tag');
+        tag.innerText = userRole;
+        tag.className = "role-badge " + (esAdmin ? "bg-admin" : "bg-staff");
+    }
+
+    function renderPhones() {
+        const box = document.getElementById('box-phones');
+        box.innerHTML = phones.map(f => `
+            <div class="card phone-card" style="text-align:center">
+                <img src="${f.img}">
+                <h4 style="margin-top:10px">${f.n}</h4>
+                <p style="color:var(--accent); font-weight:bold">$${f.p}</p>
+            </div>
+        `).join('');
+    }
+
+    function agregarCliente(e) {
+        e.preventDefault();
+        if(userRole !== "ADMIN") return;
+        const row = `<tr><td>${document.getElementById('c-nom').value}</td><td>${document.getElementById('c-mail').value}</td><td>${document.getElementById('c-tel').value}</td></tr>`;
+        document.getElementById('lista-clientes').innerHTML += row;
+        e.target.reset();
+    }
+
+    function agregarPersonal(e) {
+        e.preventDefault();
+        if(userRole !== "ADMIN") return;
+        const row = `<tr><td>${document.getElementById('p-nom').value}</td><td>${document.getElementById('p-car').value}</td><td>$${document.getElementById('p-sue').value}</td><td><button onclick="this.parentElement.parentElement.remove()" style="color:var(--danger); background:none; border:none; cursor:pointer"><i class="fas fa-trash"></i></button></td></tr>`;
+        document.getElementById('lista-personal').innerHTML += row;
+        e.target.reset();
+    }
+
+    function tab(id) {
+        document.querySelectorAll('.tab-sec').forEach(s => s.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+</script>
+
+</body>
+</html>
